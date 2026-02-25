@@ -8,10 +8,10 @@ on:
 
 env:
   BUILD_TYPE: Release
-  IDA_VERSION_FOR_ARTIFACT_NAME: "9.1.250226"
-  URL_TO_IDASDK_ZIP: https://vaclive.party/software/ida-pro/releases/download/9.1.250226/idasdk91.zip
-  SHA256_IDASDK_ZIP: 508f690e49ab0415a3f8d422826954ac8d3ae9b92f48121fcd1e53c68bc7e1f2
-  PATH_TO_IDASDK_CONTENT: idasdk91
+  IDA_VERSION_FOR_ARTIFACT_NAME: "9.3.260213"
+  URL_TO_IDASDK_ZIP: https://codeberg.org/exidot/ida/releases/download/9.3/idasdk9.3.zip
+  SHA256_IDASDK_ZIP: fc136a581f30ba08e70b490b6ece6dca13fa5d25a43c56c9ff3242bea2ae1522
+  PATH_TO_IDASDK_CONTENT: ida-sdk-9.3/src
 
 jobs:
   build:
