@@ -18,24 +18,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - os: ubuntu-24.04
-        - os: ubuntu-22.04
-        - os: macos-15-intel
-        - os: macos-15
-        - os: windows-2022
+        os:
+        - ubuntu-24.04
+        - ubuntu-22.04
+        - macos-15-intel
+        - macos-15
+        - windows-2022
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout current repository
+      uses: actions/checkout@v4
 
-    - uses: actions/checkout@v4
+    - name: Checkout bindiff repository
+      uses: actions/checkout@v4
       with:
         repository: google/bindiff
         ref: 156cc32a39863e8795fbbe05da113f005f72752b
         path: bindiff
 
-    - uses: actions/checkout@v4
+    - name: Checkout binexport repository
+      uses: actions/checkout@v4
       with:
         repository: google/binexport
         ref: 644786690fcb6bcf6d42a76e7d8b65056176054d
@@ -43,15 +46,16 @@ jobs:
 
     - name: Apply patch (bindiff)
       shell: bash
+      working-directory: bindiff
       run: |
-        cd bindiff
-        git apply ../patches/bindiff-d60ea72a412b01d92ebb2c820ec3ee41aa1febe5.patch
+        git apply ../patches/bindiff-compile_abseil_mutexlock.patch
+        git apply ../patches/bindiff-i64_matches_ida_exe.patch
 
     - name: Apply patch (binexport)
       shell: bash
+      working-directory: binexport
       run: |
-        cd binexport
-        git apply ../patches/binexport-bdb8c4430549e69d4a9a7531c59b197f3a0757e6.patch
+        git apply ../patches/binexport-cmake.patch
 
     - name: Install ninja-build tool
       uses: aseprite/get-ninja@main

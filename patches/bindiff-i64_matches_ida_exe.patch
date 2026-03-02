@@ -1,0 +1,17 @@
+diff --git a/java/zylib/src/main/java/com/google/security/zynamics/zylib/system/IdaHelpers.java b/java/zylib/src/main/java/com/google/security/zynamics/zylib/system/IdaHelpers.java
+index 9c9f97bb..dd72c556 100644
+--- a/java/zylib/src/main/java/com/google/security/zynamics/zylib/system/IdaHelpers.java
++++ b/java/zylib/src/main/java/com/google/security/zynamics/zylib/system/IdaHelpers.java
+@@ -28,10 +28,10 @@ public final class IdaHelpers {
+   static {
+     if (SystemHelpers.isRunningWindows()) {
+       IDA32_EXECUTABLE = "ida.exe";
+-      IDA64_EXECUTABLE = "ida64.exe";
++      IDA64_EXECUTABLE = "ida.exe";
+     } else {
+       IDA32_EXECUTABLE = "ida";
+-      IDA64_EXECUTABLE = "ida64";
++      IDA64_EXECUTABLE = "ida";
+     }
+   }
+ 
