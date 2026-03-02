@@ -8,13 +8,11 @@ on:
 
 env:
   BUILD_TYPE: Release
-  IDA_VERSION_FOR_ARTIFACT_NAME: "9.3.260213"
-  URL_TO_IDASDK_ZIP: https://codeberg.org/exidot/ida/releases/download/9.3/idasdk9.3.zip
-  SHA256_IDASDK_ZIP: fc136a581f30ba08e70b490b6ece6dca13fa5d25a43c56c9ff3242bea2ae1522
-  PATH_TO_IDASDK_CONTENT: ida-sdk-9.3/src
 
 jobs:
   build:
+    name: IDA ${{ matrix.idasdk.version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -24,25 +22,46 @@ jobs:
         - macos-15-intel
         - macos-15
         - windows-2022
-    runs-on: ${{ matrix.os }}
+        idasdk:
+          - version: "9.0"
+            type: hcli
+            hcli_tag: "release/9.0/sdk-and-utilities/idasdk90.zip"
+            zip_filename: "idasdk90.zip"
+            subdir: "idasdk90"
+          - version: "9.1"
+            type: hcli
+            hcli_tag: "release/9.1/sdk-and-utilities/idasdk91.zip"
+            zip_filename: "idasdk91.zip"
+            subdir: "idasdk91"
+          - version: "9.2"
+            type: hcli
+            hcli_tag: "release/9.2/sdk-and-utilities/idasdk92.zip"
+            zip_filename: "idasdk92.zip"
+            subdir: "src"
+          - version: "9.3"
+            type: oss
+            repo_tag: "v9.3"
+            subdir: "src"
 
     steps:
     - name: Checkout current repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Checkout bindiff repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: google/bindiff
         ref: 156cc32a39863e8795fbbe05da113f005f72752b
         path: bindiff
+        submodules: recursive
 
     - name: Checkout binexport repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: google/binexport
         ref: 644786690fcb6bcf6d42a76e7d8b65056176054d
         path: binexport
+        submodules: recursive
 
     - name: Apply patch (bindiff)
       shell: bash
@@ -57,35 +76,28 @@ jobs:
       run: |
         git apply ../patches/binexport-cmake.patch
 
-    - name: Install ninja-build tool
-      uses: aseprite/get-ninja@main
-
-    - name: Get idasdk
-      if: matrix.os != 'windows-2022'
+    - name: Get idasdk (hcli)
+      if: matrix.idasdk.type == 'hcli'
       shell: bash
       run: |
-        mkdir -p build/out build/ida
-        curl -L -o build/idasdk.zip "${{ env.URL_TO_IDASDK_ZIP }}"
-        echo "${{ env.SHA256_IDASDK_ZIP }}  build/idasdk.zip" | shasum -a 256 --check -
-        if [ $? -ne 0 ]; then
-          echo "[!] SHA256 checksum does not match. Aborting."
-          exit 1
-        fi
-        unzip -q build/idasdk.zip -d build/ida/
+        mkdir idasdk
+        curl -LsSf https://hcli.docs.hex-rays.com/install | sh
+        hcli download "${{ matrix.idasdk.hcli_tag }}"
+        unzip -q "${{ matrix.idasdk.zip_filename }}" -d idasdk/
+      env:
+        HCLI_API_KEY: ${{ secrets.HCLI_API_KEY }}
 
-    - name: Get idasdk (Windows)
-      if: matrix.os == 'windows-2022'
-      shell: pwsh
-      run: |
-        mkdir -p build\out
-        mkdir -p build\ida
-        Invoke-WebRequest -Uri "${{ env.URL_TO_IDASDK_ZIP }}" -OutFile "build\idasdk.zip"
-        $sha256 = Get-FileHash -Path "build\idasdk.zip" -Algorithm SHA256
-        if ($sha256.Hash -ne "${{ env.SHA256_IDASDK_ZIP }}") {
-          Write-Host "[!] SHA256 checksum does not match. Aborting."
-          exit 1
-        }
-        Expand-Archive -Path "build\idasdk.zip" -DestinationPath "build\ida\" -Force
+    - name: Get idasdk (oss)
+      if: matrix.idasdk.type == 'oss'
+      uses: actions/checkout@v6
+      with:
+        repository: HexRaysSA/ida-sdk
+        ref: ${{ matrix.idasdk.repo_tag }}
+        path: idasdk
+        submodules: recursive
+
+    - name: Install ninja-build tool
+      uses: aseprite/get-ninja@main
 
     - name: Enable Developer Command Prompt (Windows)
       if: matrix.os == 'windows-2022'
@@ -109,11 +121,12 @@ jobs:
       env:
         BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
       run: |
+        mkdir -p build/out
         cmake -S bindiff -B build/out -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
           -DCMAKE_INSTALL_PREFIX=build/out \
           -DBINDIFF_BINEXPORT_DIR=binexport \
-          "-DIdaSdk_ROOT_DIR=${PWD}/build/ida/${{ env.PATH_TO_IDASDK_CONTENT }}" \
+          "-DIdaSdk_ROOT_DIR=${PWD}/idasdk/${{ matrix.idasdk.subdir }}" \
           -DBoost_INCLUDE_DIR="${{ steps.install-boost.outputs.BOOST_ROOT }}/include" \
           -DBoost_LIBRARY_DIRS="${{ steps.install-boost.outputs.BOOST_ROOT }}/lib"
 
@@ -128,9 +141,9 @@ jobs:
       run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
 
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
-        name: BinDiff-IDA-${{ env.IDA_VERSION_FOR_ARTIFACT_NAME }}-${{ matrix.os }}
+        name: BinDiff-IDA-${{ matrix.idasdk.version }}-${{ matrix.os }}
         path: |
           build/out/bindiff
           build/out/bindiff.exe
@@ -147,7 +160,7 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=build/out/_deps/binexport-build \
           -DBINEXPORT_ENABLE_IDAPRO=ON \
           -DBINEXPORT_ENABLE_BINARYNINJA=ON \
-          "-DIdaSdk_ROOT_DIR=${PWD}/build/ida/${{ env.PATH_TO_IDASDK_CONTENT }}" \
+          "-DIdaSdk_ROOT_DIR=${PWD}/idasdk/${{ matrix.idasdk.subdir }}" \
           -DBoost_INCLUDE_DIR="${{ steps.install-boost.outputs.BOOST_ROOT }}/include" \
           -DBoost_LIBRARY_DIRS="${{ steps.install-boost.outputs.BOOST_ROOT }}/lib"
 
@@ -162,9 +175,9 @@ jobs:
       run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
 
     - name: Upload Build Artifacts (binexport)
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
-        name: BinExport-IDA-${{ env.IDA_VERSION_FOR_ARTIFACT_NAME }}-${{ matrix.os }}
+        name: BinExport-IDA-${{ matrix.idasdk.version }}-${{ matrix.os }}
         path: |
           build/out/_deps/binexport-build/binaryninja/binexport*
           build/out/_deps/binexport-build/ida/binexport*
