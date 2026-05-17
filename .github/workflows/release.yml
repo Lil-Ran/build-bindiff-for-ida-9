@@ -24,15 +24,19 @@ on:
         type: boolean
         default: true
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # for creating releases and uploading assets
+      id-token: write # attest
+      attestations: write # attest
+      artifact-metadata: write # attest
     steps:
       - name: Download GitHub Artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: artifacts
           skip-decompress: true
@@ -40,20 +44,40 @@ jobs:
           run-id: ${{ github.event.inputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Release and Upload Assets
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+      - uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
-          working_directory: artifacts
-          files: |
-            *
-          fail_on_unmatched_files: true
-          draft: ${{ github.event.inputs.draft }}
-          prerelease: ${{ github.event.inputs.prerelease }}
-          make_latest: ${{ github.event.inputs.latest }}
-          name: ${{ github.event.inputs.title }}
-          tag_name: ${{ github.event.inputs.tag_name }}
-          body: |
-            Refer to README.md for guidance on selecting and installing the version.
+          subject-path: artifacts/*
 
-            These artifacts are built here: https://github.com/Lil-Ran/build-bindiff-for-ida-9/actions/runs/${{ github.event.inputs.run_id }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release and Upload Assets
+        working-directory: artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: "${{ github.event.inputs.run_id }}"
+          ANNOUNCEMENT_TITLE: "${{ github.event.inputs.title }}"
+          TAG_NAME: "${{ github.event.inputs.tag_name }}"
+          DRAFT_FLAG: "${{ github.event.inputs.draft && '--draft' || '' }}"
+          PRERELEASE_FLAG: "${{ github.event.inputs.prerelease && '--prerelease' || '' }}"
+          LATEST_FLAG: "${{ github.event.inputs.latest && '--latest' || '--latest=false' }}"
+        run: |
+          set -euo pipefail
+
+          files=(*)
+          if [[ ${#files[@]} -eq 0 || ${files[0]} == '*' ]]; then
+            echo "No release assets found in artifacts/" >&2
+            exit 1
+          fi
+
+          notes=$(cat <<EOF
+          Refer to README.md for guidance on selecting and installing the version.
+
+          These artifacts are built here: https://github.com/${REPO}/actions/runs/${RUN_ID}
+          EOF
+          )
+
+          gh release create "${TAG_NAME}" "${files[@]}" \
+            --title "${ANNOUNCEMENT_TITLE}" \
+            --notes "$notes" \
+            ${DRAFT_FLAG} \
+            ${PRERELEASE_FLAG} \
+            ${LATEST_FLAG}

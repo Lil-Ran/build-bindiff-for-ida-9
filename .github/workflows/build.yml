@@ -9,6 +9,8 @@ on:
 env:
   BUILD_TYPE: Release
 
+permissions: {}
+
 jobs:
   build:
     name: IDA ${{ matrix.idasdk.version }} on ${{ matrix.os.label }}
@@ -53,23 +55,27 @@ jobs:
 
     steps:
     - name: Checkout current repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
 
     - name: Checkout bindiff repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         repository: google/bindiff
         ref: 156cc32a39863e8795fbbe05da113f005f72752b
         path: bindiff
         submodules: recursive
+        persist-credentials: false
 
     - name: Checkout binexport repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         repository: google/binexport
         ref: 644786690fcb6bcf6d42a76e7d8b65056176054d
         path: binexport
         submodules: recursive
+        persist-credentials: false
 
     - name: Apply patch (bindiff)
       shell: bash
@@ -86,7 +92,7 @@ jobs:
 
     - name: Setup uv (hcli)
       if: matrix.idasdk.type == 'hcli'
-      uses: astral-sh/setup-uv@v7
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
     - name: Get idasdk (hcli)
       if: matrix.idasdk.type == 'hcli'
@@ -100,24 +106,25 @@ jobs:
 
     - name: Get idasdk (oss)
       if: matrix.idasdk.type == 'oss'
-      uses: actions/checkout@v6
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         repository: HexRaysSA/ida-sdk
         ref: ${{ matrix.idasdk.repo_tag }}
         path: idasdk
         submodules: recursive
+        persist-credentials: false
 
     - name: Setup CMake
-      uses: jwlawson/actions-setup-cmake@3a6cbe35ba64df7ca70c51365c4aff65db9a9037  # v2.1.1
+      uses: jwlawson/actions-setup-cmake@3a6cbe35ba64df7ca70c51365c4aff65db9a9037 # v2.1.1
       with:
-        cmake-version: '3.28.x'
+        cmake-version: "3.28.x"
 
     - name: Install ninja-build tool
       uses: aseprite/get-ninja@27788a2a3a1d6106713702d6741e4ee95f3cc10a
 
     - name: Enable Developer Command Prompt (Windows)
       if: matrix.os.type == 'windows'
-      uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756  # v1.13.0
+      uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
 
     - name: Enable mold linker (Linux)
       if: matrix.os.type == 'linux'
@@ -125,11 +132,14 @@ jobs:
 
     - name: Configure CMake
       shell: bash
+      env:
+        OS_TYPE: ${{ matrix.os.type }}
+        IDASDK_SUBDIR: ${{ matrix.idasdk.subdir }}
       run: |
         mkdir -p build/out
 
         # Build universal binaries on macOS (both arm64 and x86_64)
-        if [ "${{ matrix.os.type }}" = "macos" ]; then
+        if [ "${OS_TYPE}" = "macos" ]; then
           CMAKE_EXTRA_FLAGS="-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
         else
           CMAKE_EXTRA_FLAGS=""
@@ -139,7 +149,7 @@ jobs:
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
           -DCMAKE_INSTALL_PREFIX=build/out \
           -DBINDIFF_BINEXPORT_DIR=binexport \
-          "-DIdaSdk_ROOT_DIR=${PWD}/idasdk/${{ matrix.idasdk.subdir }}" \
+          "-DIdaSdk_ROOT_DIR=${PWD}/idasdk/${IDASDK_SUBDIR}" \
           ${CMAKE_EXTRA_FLAGS}
 
     - name: Build
@@ -153,7 +163,7 @@ jobs:
       run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
 
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: IDA_${{ matrix.idasdk.version }}-BinDiff-${{ matrix.os.artifacts_suffix }}
         path: |
@@ -164,9 +174,12 @@ jobs:
 
     - name: Configure CMake (binexport)
       shell: bash
+      env:
+        OS_TYPE: ${{ matrix.os.type }}
+        IDASDK_SUBDIR: ${{ matrix.idasdk.subdir }}
       run: |
         # Build universal binaries on macOS (both arm64 and x86_64)
-        if [ "${{ matrix.os.type }}" = "macos" ]; then
+        if [ "${OS_TYPE}" = "macos" ]; then
           CMAKE_EXTRA_FLAGS="-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
         else
           CMAKE_EXTRA_FLAGS=""
@@ -177,7 +190,7 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=build/out/_deps/binexport-build \
           -DBINEXPORT_ENABLE_IDAPRO=ON \
           -DBINEXPORT_ENABLE_BINARYNINJA=ON \
-          "-DIdaSdk_ROOT_DIR=${PWD}/idasdk/${{ matrix.idasdk.subdir }}" \
+          "-DIdaSdk_ROOT_DIR=${PWD}/idasdk/${IDASDK_SUBDIR}" \
           ${CMAKE_EXTRA_FLAGS}
 
     - name: Build (binexport)
@@ -191,7 +204,7 @@ jobs:
       run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
 
     - name: Upload Build Artifacts (binexport)
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: IDA_${{ matrix.idasdk.version }}-BinExport-${{ matrix.os.artifacts_suffix }}
         path: |
