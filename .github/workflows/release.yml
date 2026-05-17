@@ -53,12 +53,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          RUN_ID: "${{ github.event.inputs.run_id }}"
-          ANNOUNCEMENT_TITLE: "${{ github.event.inputs.title }}"
-          TAG_NAME: "${{ github.event.inputs.tag_name }}"
-          DRAFT_FLAG: "${{ github.event.inputs.draft && '--draft' || '' }}"
-          PRERELEASE_FLAG: "${{ github.event.inputs.prerelease && '--prerelease' || '' }}"
-          LATEST_FLAG: "${{ github.event.inputs.latest && '--latest' || '--latest=false' }}"
+          RUN_ID: "${{ inputs.run_id }}"
+          ANNOUNCEMENT_TITLE: "${{ inputs.title }}"
+          TAG_NAME: "${{ inputs.tag_name }}"
+          DRAFT_FLAG: "${{ inputs.draft && '--draft' || '' }}"
+          PRERELEASE_FLAG: "${{ inputs.prerelease && '--prerelease' || '' }}"
+          LATEST_FLAG: "${{ inputs.latest && '--latest' || '--latest=false' }}"
         run: |
           set -euo pipefail
 
