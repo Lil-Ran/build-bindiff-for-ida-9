@@ -76,6 +76,7 @@ jobs:
           )
 
           gh release create "${TAG_NAME}" "${files[@]}" \
+            --repo "${REPO}" \
             --title "${ANNOUNCEMENT_TITLE}" \
             --notes "$notes" \
             ${DRAFT_FLAG} \
