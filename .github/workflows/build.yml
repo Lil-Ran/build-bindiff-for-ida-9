@@ -63,7 +63,7 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         repository: google/bindiff
-        ref: 156cc32a39863e8795fbbe05da113f005f72752b
+        ref: 1713700a227607b0d6b46628e00de85cfa4c049b
         path: bindiff
         submodules: recursive
         persist-credentials: false
@@ -72,7 +72,7 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         repository: google/binexport
-        ref: 644786690fcb6bcf6d42a76e7d8b65056176054d
+        ref: f22ec46655b9ed05374f0b6d2614a2572baf6475
         path: binexport
         submodules: recursive
         persist-credentials: false
@@ -114,14 +114,6 @@ jobs:
         submodules: recursive
         persist-credentials: false
 
-    - name: Setup CMake
-      uses: jwlawson/actions-setup-cmake@3a6cbe35ba64df7ca70c51365c4aff65db9a9037 # v2.1.1
-      with:
-        cmake-version: "3.28.x"
-
-    - name: Install ninja-build tool
-      uses: aseprite/get-ninja@27788a2a3a1d6106713702d6741e4ee95f3cc10a
-
     - name: Enable Developer Command Prompt (Windows)
       if: matrix.os.type == 'windows'
       uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
@@ -129,6 +121,12 @@ jobs:
     - name: Enable mold linker (Linux)
       if: matrix.os.type == 'linux'
       uses: rui314/setup-mold@725a8794d15fc7563f59595bd9556495c0564878
+
+    - name: Setup CMake and Ninja
+      uses: lukka/get-cmake@7bfc9baacbbdcb5e37957ad05c3546b3e222be3c # v4.3.2
+      with:
+        cmakeVersion: 4.3.2
+        ninjaVersion: 1.13.2
 
     - name: Configure CMake
       shell: bash
