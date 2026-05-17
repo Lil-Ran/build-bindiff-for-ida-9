@@ -120,7 +120,7 @@ jobs:
 
     - name: Enable mold linker (Linux)
       if: matrix.os.type == 'linux'
-      uses: rui314/setup-mold@725a8794d15fc7563f59595bd9556495c0564878
+      uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444
 
     - name: Setup CMake and Ninja
       uses: lukka/get-cmake@7bfc9baacbbdcb5e37957ad05c3546b3e222be3c # v4.3.2
