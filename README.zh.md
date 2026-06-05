@@ -31,17 +31,17 @@
 - windows-2025
 - ubuntu-24.04 _(适用于 glibc 2.39 及以上)_
 - ubuntu-22.04 _(适用于 glibc 2.35 及以上)_
-- macos-15 _(构建可用于 Apple silicon 和 Intel 的通用二进制文件)_
+- macos-26 _(构建可用于 Apple silicon 和 Intel 的通用二进制文件)_
 
 Ubuntu 构建文件兼容大多数 Linux 发行版，只要它们使用相同或更高版本的 glibc（以及其他系统库）。
 
 ## 自定义构建
 
-如需自行构建，可 fork 本仓库并修改 `.github/workflows` 目录下的 yml 文件。该文件已经有足够的可读性，以下是一些提示：
+如需自行构建，可 fork 本仓库并修改 `.github/workflows/build.yml`。该文件已经有足够的可读性，以下是一些提示：
 
 - `matrix.idasdk.subdir` 指的是从 IDA SDK 根目录到直接包含 `include` 和 `lib` 目录的路径。
 - `matrix.idasdk.type` 指的是 IDA SDK 的下载来源，如果是 `hcli`，则需要查阅 [HCLI 文档](https://hcli.docs.hex-rays.com/getting-started/authentication/#api-key-authentication) 以获取 API key，并将其添加到仓库的 Secrets 中。
-- GitHub Actions 对 public 的仓库免费，若想减少运行时间，可在 `matrix.os` 移除不需要的操作系统。
+- GitHub Actions 对 public 的仓库免费，若想减少运行时间，可在 `matrix.os` 和 `matrix.idasdk` 中移除不需要的操作系统和 IDA 版本。
 
 Fork 后的仓库默认禁用 Actions，可在仓库设置的 "Actions" 标签页中启用。
 

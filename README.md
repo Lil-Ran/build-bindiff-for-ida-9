@@ -31,17 +31,17 @@ We build on these [GitHub-hosted runners](https://docs.github.com/en/actions/usi
 - windows-2025
 - ubuntu-24.04 *(for glibc 2.39 and above)*
 - ubuntu-22.04 *(for glibc 2.35 and above)*
-- macos-15 *(universal binary for both Apple silicon and Intel)*
+- macos-26 *(universal binary for both Apple silicon and Intel)*
 
 Ubuntu builds are compatible with most Linux distributions as long as they use the same or newer version of glibc (and other system libraries).
 
 ## Custom Build
 
-If you want to build on your own, fork this repository and modify the yml files under `.github/workflows`. They are fairly self-explanatory, but here are some tips:
+If you want to build on your own, fork this repository and modify `.github/workflows/build.yml`. It is fairly self-explanatory, but here are some tips:
 
 - `matrix.idasdk.subdir` is the path from the IDA SDK root directory to the directory that contains the `include` and `lib` directories.
 - `matrix.idasdk.type` is the source type for downloading the IDA SDK. If you use `hcli`, check the [HCLI documentation](https://hcli.docs.hex-rays.com/getting-started/authentication/#api-key-authentication) to get an API key and add it to your repository secrets.
-- GitHub Actions is free for public repositories. To reduce build time, remove unnecessary operating systems from `matrix.os`.
+- GitHub Actions is free for public repositories. To reduce build time, remove unnecessary operating systems and IDA versions from `matrix.os` and `matrix.idasdk`.
 
 In forked repositories, Actions is disabled by default. You can enable it in the repository settings under the "Actions" tab.
 

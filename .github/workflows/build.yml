@@ -4,10 +4,15 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'release-*'
   workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
+  # Pinning to specific commits to ensure patches apply. Generally they are set to the latest commits.
+  REF_BINDIFF: 1713700a227607b0d6b46628e00de85cfa4c049b
+  REF_BINEXPORT: f22ec46655b9ed05374f0b6d2614a2572baf6475
 
 permissions: {}
 
@@ -25,7 +30,7 @@ jobs:
           - label: ubuntu-22.04
             type: linux
             artifacts_suffix: "x86_64-Linux-built_on_Ubuntu_22.04"
-          - label: macos-15
+          - label: macos-26
             type: macos
             artifacts_suffix: "universal-macOS"
           - label: windows-2025
@@ -63,7 +68,7 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         repository: google/bindiff
-        ref: 1713700a227607b0d6b46628e00de85cfa4c049b
+        ref: ${{ env.REF_BINDIFF }}
         path: bindiff
         submodules: recursive
         persist-credentials: false
@@ -72,7 +77,7 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         repository: google/binexport
-        ref: f22ec46655b9ed05374f0b6d2614a2572baf6475
+        ref: ${{ env.REF_BINEXPORT }}
         path: binexport
         submodules: recursive
         persist-credentials: false
@@ -93,6 +98,8 @@ jobs:
     - name: Setup uv (hcli)
       if: matrix.idasdk.type == 'hcli'
       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      with:
+        enable-cache: false
 
     - name: Get idasdk (hcli)
       if: matrix.idasdk.type == 'hcli'
@@ -123,9 +130,9 @@ jobs:
       uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444
 
     - name: Setup CMake and Ninja
-      uses: lukka/get-cmake@7bfc9baacbbdcb5e37957ad05c3546b3e222be3c # v4.3.2
+      uses: lukka/get-cmake@591817e96fcad43505fb4eae36172462abb3a42e # v4.3.3
       with:
-        cmakeVersion: 4.3.2
+        cmakeVersion: 4.3.3
         ninjaVersion: 1.13.2
 
     - name: Configure CMake
@@ -209,3 +216,112 @@ jobs:
           build/out/_deps/binexport-build/binaryninja/binexport*
           build/out/_deps/binexport-build/ida/binexport*
           build/out/_deps/binexport-build/tools/binexport2dump*
+
+  release:
+    name: Create Release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/release-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # for creating releases and uploading assets
+      id-token: write # attest
+      attestations: write # attest
+      artifact-metadata: write # attest
+    steps:
+      - name: Checkout current repository to get commit message
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Download GitHub Artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: artifacts
+          skip-decompress: true
+          merge-multiple: true
+
+      - name: Attest Build Artifacts
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-path: artifacts/*
+
+      - name: Create Release and Upload Assets
+        working-directory: artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: "${{ github.run_id }}"
+          ANNOUNCEMENT_TITLE: "${{ github.ref_name }}"
+          TAG_NAME: "${{ github.ref_name }}"
+        run: |
+          set -euo pipefail
+
+          FILES=(*)
+          if [[ ${#FILES[@]} -eq 0 || ${FILES[0]} == '*' ]]; then
+            echo "No release assets found in artifacts/" >&2
+            exit 1
+          fi
+
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          COMMIT_MSG_ONELINE=$(printf '%s' "$COMMIT_MSG" | tr '\n' ' ')
+
+          NOTES=$(cat <<EOF
+          From GitHub Actions run: [${RUN_ID}](https://github.com/${REPO}/actions/runs/${RUN_ID})
+
+          BinDiff: [`${REF_BINDIFF}`](https://github.com/google/bindiff/commit/${REF_BINDIFF})
+
+          BinExport: [`${REF_BINEXPORT}`](https://github.com/google/binexport/commit/${REF_BINEXPORT})
+
+          Refer to README.md for guidance on selecting and installing the version.
+          EOF
+          )
+
+          # If COMMIT_MSG contains an HTML details block, extract summary as title and the rest as extra notes
+          if printf '%s' "$COMMIT_MSG" | grep -q '<details>'; then
+            TITLE=$(printf '%s' "$COMMIT_MSG" | perl -0777 -ne 'print $1 if /<summary>(.*?)<\/summary>/s')
+            BODY=$(printf '%s' "$COMMIT_MSG" | perl -0777 -ne 'print $1 if /<summary>.*?<\/summary>\s*(.*?)<\/details>/s')
+            TITLE=$(printf '%s' "$TITLE" | tr '\n' ' ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            BODY=$(printf '%s' "$BODY" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            if [[ -n "$TITLE" ]]; then
+              ANNOUNCEMENT_TITLE="$TITLE"
+            fi
+            if [[ -n "$BODY" ]]; then
+              NOTES=$(printf '%s\n\n---\n\n%s' "$BODY" "$NOTES")
+            fi
+          fi
+
+          # Parse commit-message flags like prerelease=0 latest=1 draft=0 and map to release flags
+          parse_flag() {
+            key=$1
+            printf '%s' "$COMMIT_MSG_ONELINE" | grep -oP "${key}=\K[01]" | head -n1 || true
+          }
+
+          PRERELEASE_VAL=$(parse_flag prerelease)
+          LATEST_VAL=$(parse_flag latest)
+          DRAFT_VAL=$(parse_flag draft)
+
+          if [[ "$PRERELEASE_VAL" == "1" ]]; then
+            PRERELEASE_FLAG='--prerelease'
+          else
+            PRERELEASE_FLAG=''
+          fi
+
+          if [[ "$LATEST_VAL" == "0" ]]; then
+            LATEST_FLAG='--latest=false'
+          else
+            LATEST_FLAG='--latest'
+          fi
+
+          if [[ "$DRAFT_VAL" == "1" ]]; then
+            DRAFT_FLAG='--draft'
+          else
+            DRAFT_FLAG=''
+          fi
+
+          gh release create "${TAG_NAME}" "${FILES[@]}" \
+            --repo "${REPO}" \
+            --title "${ANNOUNCEMENT_TITLE}" \
+            --notes "$NOTES" \
+            ${DRAFT_FLAG} \
+            ${PRERELEASE_FLAG} \
+            ${LATEST_FLAG}
