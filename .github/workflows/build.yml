@@ -101,6 +101,7 @@ jobs:
       working-directory: binexport
       run: |
         git apply ../patches/binexport-cmake.patch
+        git apply ../patches/binexport-FindIdaSdk_IDA930_rename_5da373a9c296da3fd3bf39efa5e1113eb6423df2.patch
 
     - name: Setup uv (hcli)
       if: matrix.idasdk.type == 'hcli'
