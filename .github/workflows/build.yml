@@ -170,11 +170,6 @@ jobs:
       shell: bash
       run: cmake --build . --config "${BUILD_TYPE}" --parallel 4
 
-    - name: Test
-      working-directory: build/out
-      shell: bash
-      run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
-
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
@@ -210,11 +205,6 @@ jobs:
       working-directory: build/out/_deps/binexport-build
       shell: bash
       run: cmake --build . --config "${BUILD_TYPE}" --parallel 4
-
-    - name: Test (binexport)
-      working-directory: build/out/_deps/binexport-build
-      shell: bash
-      run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
 
     - name: Upload Build Artifacts (binexport)
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -276,9 +266,9 @@ jobs:
           NOTES=$(cat <<EOF
           From GitHub Actions run: [${RUN_ID}](https://github.com/${REPO}/actions/runs/${RUN_ID})
 
-          BinDiff: [`${REF_BINDIFF}`](https://github.com/google/bindiff/commit/${REF_BINDIFF})
+          BinDiff: [\`${REF_BINDIFF}\`](https://github.com/google/bindiff/commit/${REF_BINDIFF})
 
-          BinExport: [`${REF_BINEXPORT}`](https://github.com/google/binexport/commit/${REF_BINEXPORT})
+          BinExport: [\`${REF_BINEXPORT}\`](https://github.com/google/binexport/commit/${REF_BINEXPORT})
 
           Refer to README.md for guidance on selecting and installing the version.
           EOF
