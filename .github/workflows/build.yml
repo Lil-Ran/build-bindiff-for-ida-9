@@ -12,7 +12,7 @@ env:
   BUILD_TYPE: Release
   # Pinning to specific commits to ensure patches apply. Generally they are set to the latest commits.
   REF_BINDIFF: 1713700a227607b0d6b46628e00de85cfa4c049b
-  REF_BINEXPORT: f22ec46655b9ed05374f0b6d2614a2572baf6475
+  REF_BINEXPORT: c2dc05eed2fa85f8abd0c6e5a4c71478fe748c3b
 
 permissions: {}
 
@@ -49,23 +49,30 @@ jobs:
             zip_filename: "idasdk91.zip"
             subdir: "idasdk91"
           - version: "9.2"
-            type: hcli
-            hcli_tag: "release/9.2/sdk-and-utilities/idasdk92.zip"
-            zip_filename: "idasdk92.zip"
+            type: oss
+            repo_tag: "v9.2.0-sdk.1"
             subdir: "src"
           - version: "9.3"
             type: oss
-            repo_tag: "v9.3"
+            repo_tag: "v9.3.0-sdk.3"
+            subdir: "src"
+          - version: "9.3sp1"
+            type: oss
+            repo_tag: "v9.3.1-sdk.1"
+            subdir: "src"
+          - version: "9.4"
+            type: oss
+            repo_tag: "v9.4.0-release"
             subdir: "src"
 
     steps:
     - name: Checkout current repository
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         persist-credentials: false
 
     - name: Checkout bindiff repository
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         repository: google/bindiff
         ref: ${{ env.REF_BINDIFF }}
@@ -74,7 +81,7 @@ jobs:
         persist-credentials: false
 
     - name: Checkout binexport repository
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         repository: google/binexport
         ref: ${{ env.REF_BINEXPORT }}
@@ -97,7 +104,7 @@ jobs:
 
     - name: Setup uv (hcli)
       if: matrix.idasdk.type == 'hcli'
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       with:
         enable-cache: false
 
@@ -113,7 +120,7 @@ jobs:
 
     - name: Get idasdk (oss)
       if: matrix.idasdk.type == 'oss'
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         repository: HexRaysSA/ida-sdk
         ref: ${{ matrix.idasdk.repo_tag }}
@@ -130,9 +137,9 @@ jobs:
       uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444
 
     - name: Setup CMake and Ninja
-      uses: lukka/get-cmake@591817e96fcad43505fb4eae36172462abb3a42e # v4.3.3
+      uses: lukka/get-cmake@f5b8fbb4d77cec1acc5a5f9f0df4beffaf5d98d9 # v4.3.4
       with:
-        cmakeVersion: 4.3.3
+        cmakeVersion: 4.3.4
         ninjaVersion: 1.13.2
 
     - name: Configure CMake
@@ -229,7 +236,7 @@ jobs:
       artifact-metadata: write # attest
     steps:
       - name: Checkout current repository to get commit message
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
