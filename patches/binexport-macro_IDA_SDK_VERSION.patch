@@ -1,0 +1,50 @@
+diff --git a/ida/ui.cc b/ida/ui.cc
+index bbe72c2..0367895 100644
+--- a/ida/ui.cc
++++ b/ida/ui.cc
+@@ -178,19 +178,11 @@ absl::Status CopyToClipboard(absl::string_view data) {
+     absl::StrAppend(&escaped_snippet, "\\x", absl::Hex(c, absl::kZeroPad2));
+   }
+   if (!python->eval_snippet(
+-#if IDA_SDK_VERSION >= 920
+           absl::StrCat("from PySide6 import QtWidgets; "
+                        "cb = QtWidgets.QApplication.clipboard(); "
+                        "cb.setText('",
+                        escaped_snippet, "')")
+               .c_str(),
+-#else
+-          absl::StrCat(
+-              "from PyQt5 import Qt; cb = Qt.QApplication.clipboard(); "
+-              "cb.setText('",
+-              escaped_snippet, "', mode=cb.Clipboard)")
+-              .c_str(),
+-#endif
+           &error)) {
+     return absl::InternalError(error.c_str());
+   }
+diff --git a/util/idb_export.cc b/util/idb_export.cc
+index 75cb1b7..6646413 100644
+--- a/util/idb_export.cc
++++ b/util/idb_export.cc
+@@ -53,20 +53,12 @@ absl::Status ExportDatabase(const std::string& idb_path,
+     return absl::NotFoundError(absl::StrCat("File not found: " + idb_path));
+   }
+ 
+-#if IDA_SDK_VERSION < 900
+-  const bool is_64bit = absl::EndsWithIgnoreCase(idb_path, kIdbExtension64);
+-  #ifdef _WIN32
+-    const std::string ida_exe = is_64bit ? "ida64.exe" : "ida.exe";
+-  #else
+-    const std::string ida_exe = is_64bit ? "ida64" : "ida";
+-  #endif
+-#else
+   #ifdef _WIN32
+     const std::string ida_exe = "ida.exe";
+   #else
+     const std::string ida_exe = "ida";
+   #endif
+-#endif
++
+   std::vector<std::string> args;
+   args.push_back(JoinPath(options.ida_dir, ida_exe));
+   args.push_back("-A");

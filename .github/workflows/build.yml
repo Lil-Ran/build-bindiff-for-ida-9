@@ -11,8 +11,8 @@ on:
 env:
   BUILD_TYPE: Release
   # Pinning to specific commits to ensure patches apply. Generally they are set to the latest commits.
-  REF_BINDIFF: 1713700a227607b0d6b46628e00de85cfa4c049b
-  REF_BINEXPORT: c2dc05eed2fa85f8abd0c6e5a4c71478fe748c3b
+  REF_BINDIFF: 365c0f900d7805da94ed6e3bf193f56b122daa92
+  REF_BINEXPORT: 64d3c59096601e18bf184523a6730bf3c46d6f82
 
 permissions: {}
 
@@ -24,18 +24,20 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - label: ubuntu-24.04
-            type: linux
-            artifacts_suffix: "x86_64-Linux-built_on_Ubuntu_24.04"
           - label: ubuntu-22.04
-            type: linux
             artifacts_suffix: "x86_64-Linux-built_on_Ubuntu_22.04"
+          - label: ubuntu-22.04-arm
+            artifacts_suffix: "arm64-Linux-built_on_Ubuntu_22.04"
+          - label: ubuntu-26.04
+            artifacts_suffix: "x86_64-Linux-built_on_Ubuntu_26.04"
+          - label: ubuntu-26.04-arm
+            artifacts_suffix: "arm64-Linux-built_on_Ubuntu_26.04"
           - label: macos-26
-            type: macos
             artifacts_suffix: "universal-macOS"
           - label: windows-2025
-            type: windows
             artifacts_suffix: "x86_64-Windows"
+          - label: windows-11-arm
+            artifacts_suffix: "arm64-Windows"
 
         idasdk:
           - version: "9.0"
@@ -51,19 +53,15 @@ jobs:
           - version: "9.2"
             type: oss
             repo_tag: "v9.2.0-sdk.1"
-            subdir: "src"
           - version: "9.3"
             type: oss
             repo_tag: "v9.3.0-sdk.3"
-            subdir: "src"
           - version: "9.3sp1"
             type: oss
             repo_tag: "v9.3.1-sdk.1"
-            subdir: "src"
           - version: "9.4"
             type: oss
             repo_tag: "v9.4.0-release"
-            subdir: "src"
 
     steps:
     - name: Checkout current repository
@@ -89,19 +87,11 @@ jobs:
         submodules: recursive
         persist-credentials: false
 
-    - name: Apply patch (bindiff)
-      shell: bash
-      working-directory: bindiff
-      run: |
-        git apply ../patches/bindiff-compile_abseil_mutexlock.patch
-        git apply ../patches/bindiff-i64_matches_ida_exe.patch
-
     - name: Apply patch (binexport)
       shell: bash
       working-directory: binexport
       run: |
-        git apply ../patches/binexport-cmake.patch
-        git apply ../patches/binexport-FindIdaSdk_IDA930_rename_5da373a9c296da3fd3bf39efa5e1113eb6423df2.patch
+        git apply ../patches/binexport-macro_IDA_SDK_VERSION.patch
 
     - name: Setup uv (hcli)
       if: matrix.idasdk.type == 'hcli'
@@ -116,7 +106,9 @@ jobs:
         mkdir idasdk
         uvx --from ida-hcli hcli --disable-updates download "${{ matrix.idasdk.hcli_tag }}"
         unzip -q "${{ matrix.idasdk.zip_filename }}" -d idasdk/
+        mv "idasdk/${IDA_SDK_SUBDIR}" idasdk/src
       env:
+        IDA_SDK_SUBDIR: ${{ matrix.idasdk.subdir }}
         HCLI_API_KEY: ${{ secrets.HCLI_API_KEY }}
 
     - name: Get idasdk (oss)
@@ -130,11 +122,13 @@ jobs:
         persist-credentials: false
 
     - name: Enable Developer Command Prompt (Windows)
-      if: matrix.os.type == 'windows'
+      if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+      with:
+        arch: ${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}
 
     - name: Enable mold linker (Linux)
-      if: matrix.os.type == 'linux'
+      if: runner.os == 'Linux'
       uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444
 
     - name: Setup CMake and Ninja
@@ -145,75 +139,53 @@ jobs:
 
     - name: Configure CMake
       shell: bash
-      env:
-        OS_TYPE: ${{ matrix.os.type }}
-        IDASDK_SUBDIR: ${{ matrix.idasdk.subdir }}
       run: |
-        mkdir -p build/out
-
-        # Build universal binaries on macOS (both arm64 and x86_64)
-        if [ "${OS_TYPE}" = "macos" ]; then
-          CMAKE_EXTRA_FLAGS="-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
-        else
-          CMAKE_EXTRA_FLAGS=""
-        fi
-
-        cmake -S bindiff -B build/out -G Ninja \
+        mkdir build
+        cmake -S bindiff -B build -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          -DCMAKE_INSTALL_PREFIX=build/out \
+          -DCMAKE_INSTALL_PREFIX=build \
+          "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
           -DBINDIFF_BINEXPORT_DIR=binexport \
-          "-DIdaSdk_ROOT_DIR=${PWD}/idasdk/${IDASDK_SUBDIR}" \
-          ${CMAKE_EXTRA_FLAGS}
+          "-DFETCHCONTENT_SOURCE_DIR_IDASDK=${PWD}/idasdk"
 
     - name: Build
-      working-directory: build/out
+      working-directory: build
       shell: bash
-      run: cmake --build . --config "${BUILD_TYPE}" --parallel 4
+      run: cmake --build . --config "${BUILD_TYPE}"
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: IDA_${{ matrix.idasdk.version }}-BinDiff-${{ matrix.os.artifacts_suffix }}
         path: |
-          build/out/bindiff
-          build/out/bindiff.exe
-          build/out/ida/bindiff*
-          build/out/tools/bindiff*
+          build/bindiff
+          build/bindiff.exe
+          build/ida/bindiff*
+          build/tools/bindiff*
 
     - name: Configure CMake (binexport)
       shell: bash
-      env:
-        OS_TYPE: ${{ matrix.os.type }}
-        IDASDK_SUBDIR: ${{ matrix.idasdk.subdir }}
       run: |
-        # Build universal binaries on macOS (both arm64 and x86_64)
-        if [ "${OS_TYPE}" = "macos" ]; then
-          CMAKE_EXTRA_FLAGS="-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
-        else
-          CMAKE_EXTRA_FLAGS=""
-        fi
-
-        cmake -S binexport -B build/out/_deps/binexport-build -G Ninja \
+        cmake -S binexport -B build -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          -DCMAKE_INSTALL_PREFIX=build/out/_deps/binexport-build \
+          -DCMAKE_INSTALL_PREFIX=build \
+          "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
           -DBINEXPORT_ENABLE_IDAPRO=ON \
-          -DBINEXPORT_ENABLE_BINARYNINJA=ON \
-          "-DIdaSdk_ROOT_DIR=${PWD}/idasdk/${IDASDK_SUBDIR}" \
-          ${CMAKE_EXTRA_FLAGS}
+          -DBINEXPORT_ENABLE_BINARYNINJA=OFF \
+          "-DFETCHCONTENT_SOURCE_DIR_IDASDK=${PWD}/idasdk"
 
     - name: Build (binexport)
-      working-directory: build/out/_deps/binexport-build
+      working-directory: build
       shell: bash
-      run: cmake --build . --config "${BUILD_TYPE}" --parallel 4
+      run: cmake --build . --config "${BUILD_TYPE}"
 
     - name: Upload Build Artifacts (binexport)
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: IDA_${{ matrix.idasdk.version }}-BinExport-${{ matrix.os.artifacts_suffix }}
         path: |
-          build/out/_deps/binexport-build/binaryninja/binexport*
-          build/out/_deps/binexport-build/ida/binexport*
-          build/out/_deps/binexport-build/tools/binexport2dump*
+          build/ida/binexport*
+          build/tools/binexport2dump*
 
   release:
     name: Create Release
@@ -226,7 +198,7 @@ jobs:
       attestations: write # attest
       artifact-metadata: write # attest
     steps:
-      - name: Checkout current repository to get commit message
+      - name: Checkout current repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -252,74 +224,5 @@ jobs:
           ANNOUNCEMENT_TITLE: "${{ github.ref_name }}"
           TAG_NAME: "${{ github.ref_name }}"
         run: |
-          set -euo pipefail
-
-          FILES=(*)
-          if [[ ${#FILES[@]} -eq 0 || ${FILES[0]} == '*' ]]; then
-            echo "No release assets found in artifacts/" >&2
-            exit 1
-          fi
-
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          COMMIT_MSG_ONELINE=$(printf '%s' "$COMMIT_MSG" | tr '\n' ' ')
-
-          NOTES=$(cat <<EOF
-          From GitHub Actions run: [${RUN_ID}](https://github.com/${REPO}/actions/runs/${RUN_ID})
-
-          BinDiff: [\`${REF_BINDIFF}\`](https://github.com/google/bindiff/commit/${REF_BINDIFF})
-
-          BinExport: [\`${REF_BINEXPORT}\`](https://github.com/google/binexport/commit/${REF_BINEXPORT})
-
-          Refer to README.md for guidance on selecting and installing the version.
-          EOF
-          )
-
-          # If COMMIT_MSG contains an HTML details block, extract summary as title and the rest as extra notes
-          if printf '%s' "$COMMIT_MSG" | grep -q '<details>'; then
-            TITLE=$(printf '%s' "$COMMIT_MSG" | perl -0777 -ne 'print $1 if /<summary>(.*?)<\/summary>/s')
-            BODY=$(printf '%s' "$COMMIT_MSG" | perl -0777 -ne 'print $1 if /<summary>.*?<\/summary>\s*(.*?)<\/details>/s')
-            TITLE=$(printf '%s' "$TITLE" | tr '\n' ' ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-            BODY=$(printf '%s' "$BODY" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-            if [[ -n "$TITLE" ]]; then
-              ANNOUNCEMENT_TITLE="$TITLE"
-            fi
-            if [[ -n "$BODY" ]]; then
-              NOTES=$(printf '%s\n\n---\n\n%s' "$BODY" "$NOTES")
-            fi
-          fi
-
-          # Parse commit-message flags like prerelease=0 latest=1 draft=0 and map to release flags
-          parse_flag() {
-            key=$1
-            printf '%s' "$COMMIT_MSG_ONELINE" | grep -oP "${key}=\K[01]" | head -n1 || true
-          }
-
-          PRERELEASE_VAL=$(parse_flag prerelease)
-          LATEST_VAL=$(parse_flag latest)
-          DRAFT_VAL=$(parse_flag draft)
-
-          if [[ "$PRERELEASE_VAL" == "1" ]]; then
-            PRERELEASE_FLAG='--prerelease'
-          else
-            PRERELEASE_FLAG=''
-          fi
-
-          if [[ "$LATEST_VAL" == "0" ]]; then
-            LATEST_FLAG='--latest=false'
-          else
-            LATEST_FLAG='--latest'
-          fi
-
-          if [[ "$DRAFT_VAL" == "1" ]]; then
-            DRAFT_FLAG='--draft'
-          else
-            DRAFT_FLAG=''
-          fi
-
-          gh release create "${TAG_NAME}" "${FILES[@]}" \
-            --repo "${REPO}" \
-            --title "${ANNOUNCEMENT_TITLE}" \
-            --notes "$NOTES" \
-            ${DRAFT_FLAG} \
-            ${PRERELEASE_FLAG} \
-            ${LATEST_FLAG}
+          chmod +x ../.github/scripts/release.sh
+          ../.github/scripts/release.sh
