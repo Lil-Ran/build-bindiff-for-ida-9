@@ -40,27 +40,9 @@ jobs:
             artifacts_suffix: "arm64-Windows"
 
         idasdk:
-          - version: "9.0"
-            type: hcli
-            hcli_tag: "release/9.0/sdk-and-utilities/idasdk90.zip"
-            zip_filename: "idasdk90.zip"
-            subdir: "idasdk90"
-          - version: "9.1"
-            type: hcli
-            hcli_tag: "release/9.1/sdk-and-utilities/idasdk91.zip"
-            zip_filename: "idasdk91.zip"
-            subdir: "idasdk91"
-          - version: "9.2"
-            type: oss
-            repo_tag: "v9.2.0-sdk.1"
-          - version: "9.3"
-            type: oss
-            repo_tag: "v9.3.0-sdk.3"
           - version: "9.3sp1"
-            type: oss
             repo_tag: "v9.3.1-sdk.1"
           - version: "9.4"
-            type: oss
             repo_tag: "v9.4.0-release"
 
     steps:
@@ -93,26 +75,7 @@ jobs:
       run: |
         git apply ../patches/binexport-macro_IDA_SDK_VERSION.patch
 
-    - name: Setup uv (hcli)
-      if: matrix.idasdk.type == 'hcli'
-      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-      with:
-        enable-cache: false
-
-    - name: Get idasdk (hcli)
-      if: matrix.idasdk.type == 'hcli'
-      shell: bash
-      run: |
-        mkdir idasdk
-        uvx --from ida-hcli hcli --disable-updates download "${{ matrix.idasdk.hcli_tag }}"
-        unzip -q "${{ matrix.idasdk.zip_filename }}" -d idasdk/
-        mv "idasdk/${IDA_SDK_SUBDIR}" idasdk/src
-      env:
-        IDA_SDK_SUBDIR: ${{ matrix.idasdk.subdir }}
-        HCLI_API_KEY: ${{ secrets.HCLI_API_KEY }}
-
-    - name: Get idasdk (oss)
-      if: matrix.idasdk.type == 'oss'
+    - name: Get idasdk
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: HexRaysSA/ida-sdk
