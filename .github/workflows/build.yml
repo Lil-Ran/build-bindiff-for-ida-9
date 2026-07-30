@@ -67,12 +67,12 @@ jobs:
 
     steps:
     - name: Checkout current repository
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
     - name: Checkout bindiff repository
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: google/bindiff
         ref: ${{ env.REF_BINDIFF }}
@@ -81,7 +81,7 @@ jobs:
         persist-credentials: false
 
     - name: Checkout binexport repository
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: google/binexport
         ref: ${{ env.REF_BINEXPORT }}
@@ -105,7 +105,7 @@ jobs:
 
     - name: Setup uv (hcli)
       if: matrix.idasdk.type == 'hcli'
-      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       with:
         enable-cache: false
 
@@ -121,7 +121,7 @@ jobs:
 
     - name: Get idasdk (oss)
       if: matrix.idasdk.type == 'oss'
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: HexRaysSA/ida-sdk
         ref: ${{ matrix.idasdk.repo_tag }}
@@ -138,9 +138,9 @@ jobs:
       uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444
 
     - name: Setup CMake and Ninja
-      uses: lukka/get-cmake@f5b8fbb4d77cec1acc5a5f9f0df4beffaf5d98d9 # v4.3.4
+      uses: lukka/get-cmake@e6906078ebd1ccb8ce51ab4626ac46a1b5a517e3 # v4.4.0
       with:
-        cmakeVersion: 4.3.4
+        cmakeVersion: 4.4.0
         ninjaVersion: 1.13.2
 
     - name: Configure CMake
@@ -227,7 +227,7 @@ jobs:
       artifact-metadata: write # attest
     steps:
       - name: Checkout current repository to get commit message
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -239,7 +239,7 @@ jobs:
           merge-multiple: true
 
       - name: Attest Build Artifacts
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
         with:
           subject-path: artifacts/*
 
