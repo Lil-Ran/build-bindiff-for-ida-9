@@ -40,8 +40,6 @@ jobs:
             artifacts_suffix: "arm64-Windows"
 
         idasdk:
-          - version: "9.3sp1"
-            repo_tag: "v9.3.1-sdk.1"
           - version: "9.4"
             repo_tag: "v9.4.0-release"
 
@@ -129,16 +127,17 @@ jobs:
     - name: Configure CMake (binexport)
       shell: bash
       run: |
-        cmake -S binexport -B build -G Ninja \
+        mkdir build-binexport
+        cmake -S binexport -B build-binexport -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          -DCMAKE_INSTALL_PREFIX=build \
+          -DCMAKE_INSTALL_PREFIX=build-binexport \
           "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
           -DBINEXPORT_ENABLE_IDAPRO=ON \
           -DBINEXPORT_ENABLE_BINARYNINJA=OFF \
           "-DFETCHCONTENT_SOURCE_DIR_IDASDK=${PWD}/idasdk"
 
     - name: Build (binexport)
-      working-directory: build
+      working-directory: build-binexport
       shell: bash
       run: cmake --build . --config "${BUILD_TYPE}"
 
@@ -147,8 +146,8 @@ jobs:
       with:
         name: IDA_${{ matrix.idasdk.version }}-BinExport-${{ matrix.os.artifacts_suffix }}
         path: |
-          build/ida/binexport*
-          build/tools/binexport2dump*
+          build-binexport/ida/binexport*
+          build-binexport/tools/binexport2dump*
 
   release:
     name: Create Release

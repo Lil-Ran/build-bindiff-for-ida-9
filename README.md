@@ -22,9 +22,9 @@ To install the IDA plugin, download and extract the release archive, then copy t
 
 ### IDA Versions
 
-The [latest release](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases) builds for IDA `9.4` and `9.3sp1`.
+The [latest release](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases) builds for IDA `9.4`.
 
-The last release that supports IDA `9.3`, `9.2`, `9.1`, and `9.0` is [release-20260716-1](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases/tag/release-20260716-1).
+The last release that supports IDA `9.3sp1`, `9.3`, `9.2`, `9.1`, and `9.0` is [release-20260716-1](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases/tag/release-20260716-1).
 
 The IDA version here refers to the IDA SDK version used for building. These artifacts can also work with other IDA versions that share the same ABI.
 

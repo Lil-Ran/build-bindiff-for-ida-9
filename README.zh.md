@@ -22,9 +22,9 @@
 
 ### IDA 版本
 
-[最新发版](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases)为 IDA `9.4` 和 `9.3sp1` 构建。
+[最新发版](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases)为 IDA `9.4` 构建。
 
-支持 IDA `9.3`, `9.2`, `9.1` 和 `9.0` 的最后一次发版是 [release-20260716-1](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases/tag/release-20260716-1).
+支持 IDA `9.3sp1`, `9.3`, `9.2`, `9.1` 和 `9.0` 的最后一次发版是 [release-20260716-1](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases/tag/release-20260716-1).
 
 其中的 IDA 版本指的是所用的 IDA SDK 版本。该构建产物也可用于具有相同 ABI 的其他 IDA 版本。
 
