@@ -10,7 +10,7 @@ English | [简体中文](README.zh.md)
 
 This is an unofficial repository, just for **ensuring successful builds** and **retaining historical artifacts**. The original source code is available at Google's [BinDiff](https://github.com/google/bindiff) and [BinExport](https://github.com/google/binexport) repositories.
 
-The original projects have started to support IDA 9.4 and above. However, this repository contains some necessary patches. See details in [patches/README.md](./patches/README.md).
+The original projects have started to support IDA 9.4 and above.
 
 Build logs and artifacts can be found in the [Actions tab](https://github.com/Lil-Ran/build-bindiff-for-ida-9/actions/workflows/build.yml).
 
@@ -22,7 +22,7 @@ To install the IDA plugin, download and extract the release archive, then copy t
 
 ### IDA Versions
 
-The [latest release](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases) builds for IDA `9.4`.
+The [latest release](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases) builds for IDA `9.4` and `9.5`.
 
 The last release that supports IDA `9.3sp1`, `9.3`, `9.2`, `9.1`, and `9.0` is [release-20260716-1](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases/tag/release-20260716-1).
 

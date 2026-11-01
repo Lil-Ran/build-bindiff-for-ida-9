@@ -10,7 +10,7 @@
 
 这是一个非官方仓库，仅供**确保成功构建**和**保留历史产物**。原始源码位于 Google 的 [BinDiff](https://github.com/google/bindiff) 和 [BinExport](https://github.com/google/binexport) 仓库。
 
-原项目已经开始支持 IDA 9.4 及更高版本。然而，本仓库包含一些必要的补丁。详见 [patches/README.md](./patches/README.md)。
+原项目已经开始支持 IDA 9.4 及更高版本。
 
 构建日志和产物可在 [Actions 页面](https://github.com/Lil-Ran/build-bindiff-for-ida-9/actions/workflows/build.yml) 查看。
 
@@ -22,7 +22,7 @@
 
 ### IDA 版本
 
-[最新发版](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases)为 IDA `9.4` 构建。
+[最新发版](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases)为 IDA `9.4` 和 `9.5` 构建。
 
 支持 IDA `9.3sp1`, `9.3`, `9.2`, `9.1` 和 `9.0` 的最后一次发版是 [release-20260716-1](https://github.com/Lil-Ran/build-bindiff-for-ida-9/releases/tag/release-20260716-1).
 

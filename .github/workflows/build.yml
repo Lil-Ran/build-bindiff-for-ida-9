@@ -11,8 +11,8 @@ on:
 env:
   BUILD_TYPE: Release
   # Pinning to specific commits to ensure patches apply. Generally they are set to the latest commits.
-  REF_BINDIFF: 365c0f900d7805da94ed6e3bf193f56b122daa92
-  REF_BINEXPORT: 64d3c59096601e18bf184523a6730bf3c46d6f82
+  REF_BINDIFF: 13c437afa0740bd704cf396e3de3eb8d1a471ead
+  REF_BINEXPORT: 9648cacb21a71aa6c21b3fca504f146c39164a53
 
 permissions: {}
 
@@ -41,7 +41,9 @@ jobs:
 
         idasdk:
           - version: "9.4"
-            repo_tag: "v9.4.0-release"
+            repo_tag: "v9.4.0-sdk.1"
+          - version: "9.5"
+            repo_tag: "v9.5.0-release"
 
     steps:
     - name: Checkout current repository
@@ -67,12 +69,6 @@ jobs:
         submodules: recursive
         persist-credentials: false
 
-    - name: Apply patch (binexport)
-      shell: bash
-      working-directory: binexport
-      run: |
-        git apply ../patches/binexport-macro_IDA_SDK_VERSION.patch
-
     - name: Get idasdk
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -95,7 +91,7 @@ jobs:
     - name: Setup CMake and Ninja
       uses: lukka/get-cmake@a89e43e22a96abafcd7a62db652a65ecd33052c9 # v4.4.4
       with:
-        cmakeVersion: 4.4.0
+        cmakeVersion: 4.4.4
         ninjaVersion: 1.13.2
 
     - name: Configure CMake
